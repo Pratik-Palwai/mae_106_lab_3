@@ -15,3 +15,5 @@ void setup() {
     
     compass_main.initialize();
 }
+
+void loop() { }
