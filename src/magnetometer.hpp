@@ -1,6 +1,11 @@
+#ifndef MAGNETOMETER_HPP
+#define MAGNETOMETER_HPP
+
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <LIS3MDL.h>
+
+#include "packets_vars_functions.hpp"
 
 #define EEPROM_MAG_X_OFFSET_ADDRESS 0 // a float uses 4 bytes of memory so the addresses are spaced 4 bytes apart
 #define EEPROM_MAG_X_SCALING_ADDRESS 4
@@ -11,23 +16,12 @@
 
 const int MAG_CAL_SAMPLES = 10000;
 
-struct MagPacket{
-    float mag_x = 0.0;
-    float mag_y = 0.0;
-    float mag_z = 0.0;
-};
-
-// it seems more complex to create a whole new class just for one sensor, but it will make the code for the final robot cleaner
-// this class has all the behaviors you need from your magnetometer for the 106 robot
-
 class Magnetometer106 {
     LIS3MDL sensor; // core sensor, the STM LIS3MDL
 
     float x_offset = 0.0, x_scaling = 1.0; // offsets are for hard-iron calibration
     float y_offset = 0.0, y_scaling = 1.0; // scaling factors are for soft-iron calibration
     float z_offset = 0.0, z_scaling = 1.0;
-
-    bool manual_calibration = false; // decide whether to perform a manual calibration or pull previous values from EEPROM
 
     void calibrateToEEPROM() {
         float x_min = 2147483646, x_max = -2147483646; // 32-bit integer limits
@@ -99,6 +93,8 @@ class Magnetometer106 {
     }
 
 public:
+    bool manual_calibration = false; // decide whether to perform a manual calibration or pull previous values from EEPROM
+
     void initialize() {
         if (!sensor.init()) { // initializes the I2C communcation between the ESP32 and the sensor
             Serial.println("Failed to detect/initialize LIS3MDL");
@@ -115,11 +111,13 @@ public:
     }
 
     // read the sensor values and place them into the given sensor packet
-    void read(MagPacket& mag_packet) { // because mag_packet is passed by reference(&) it avoids having to make excessive copies
+    void read(SensorPacket& sensor_packet) { // because sensor_packet is passed by reference(&) it avoids having to make excessive copies
         sensor.read();
 
-        mag_packet.mag_x = (sensor.m.x - x_offset) * x_scaling;
-        mag_packet.mag_y = (sensor.m.y - y_offset) * y_scaling;
-        mag_packet.mag_z = (sensor.m.z - z_offset) * z_scaling;
+        sensor_packet.mag_x = (sensor.m.x - x_offset) * x_scaling;
+        sensor_packet.mag_y = (sensor.m.y - y_offset) * y_scaling;
+        sensor_packet.mag_z = (sensor.m.z - z_offset) * z_scaling;
     }
 };
+
+#endif
