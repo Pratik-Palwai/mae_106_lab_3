@@ -1,10 +1,8 @@
 #include <Arduino.h>
 #include <Wire.h>
-#include <MadgwickAHRS.h>
 
-#include "sensors.hpp"
-#include "actuation.hpp"
-#include "imu.hpp"
+#include <ahrs.hpp>
+#include "servo.hpp"
 #include "magnetometer.hpp"
 #include "packets_vars_functions.hpp"
 
@@ -16,13 +14,8 @@ void setup() {
     Wire.setClock(400000); // Set I2C clock to 400kHz Fast Mode
     EEPROM.begin(24); // save 24 bytes: 3 axes * 2 values (scaling + offset) * 4 bytes per float
     
-    imu_main.initialize();
     compass_main.initialize();
-
-    imu_main.calibrate();
     compass_main.calibrate();
-
-    filter_main.begin(250); // must match updateAHRS frequency defined in sensors.hpp (250Hz / 4ms period)
 
     steering_servo.attach(SERVO_PIN);
     steering_correction.SetOutputLimits(-40, 40);

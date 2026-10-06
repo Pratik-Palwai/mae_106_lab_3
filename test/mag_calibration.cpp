@@ -1,11 +1,9 @@
 #include <Arduino.h>
 #include <Wire.h>
 
+#include "ahrs.hpp"
 #include <magnetometer.hpp>
 #include <packets_vars_functions.hpp>
-
-Magnetometer106 compass_main; // create an instance of the Magnetometer106 class called compass_main
-SensorPacket mag_packet_main; // create one instance of the SensorPacket which gets updated by the read() method
 
 void setup() {
     Serial.begin(115200);

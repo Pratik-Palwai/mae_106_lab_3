@@ -118,6 +118,11 @@ public:
         sensor_packet.mag_y = (sensor.m.y - y_offset) * y_scaling;
         sensor_packet.mag_z = (sensor.m.z - z_offset) * z_scaling;
     }
+
+    float calculateHeading(const SensorPacket& sensor_packet) {
+        float heading_rad = atan2f(sensor_packet.mag_y, sensor_packet.mag_x);
+        return heading_rad * RAD_TO_DEG;
+    }
 };
 
 #endif
