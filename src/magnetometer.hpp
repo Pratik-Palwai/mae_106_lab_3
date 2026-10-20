@@ -23,6 +23,9 @@ class Magnetometer106 {
     float y_offset = 0.0, y_scaling = 1.0; // scaling factors are for soft-iron calibration
     float z_offset = 0.0, z_scaling = 1.0;
 
+    float filter_strength = 0.75; // a higher filter strength leads to more smoothing in the compass data
+    float mag_x_previous = 0.0, mag_y_previous = 0.0;
+
     void calibrateToEEPROM() {
         float x_min = 2147483646, x_max = -2147483646; // 32-bit integer limits
         float y_min = 2147483646, y_max = - 2147483646;
@@ -43,7 +46,7 @@ class Magnetometer106 {
             delay(1);
         }
 
-        // xyz offsets move the calibration sphere center to the origin
+        // xyz offsets move the calibration sphere center to the origin (hard-iron)
         x_offset = (x_max + x_min) / 2.0;
         y_offset = (y_max + y_min) / 2.0;
         z_offset = (z_max + z_min) / 2.0;
@@ -53,7 +56,7 @@ class Magnetometer106 {
         float radius_z = (z_max - z_min) / 2.0;
         float radius_avg = (radius_x + radius_y + radius_z) / 3.0;
 
-        // if the magnetic field is distorted the scaling factors shape the ellipse into a sphere
+        // if the magnetic field is distorted the scaling factors shape the ellipse into a sphere (soft-iron)
         x_scaling = radius_avg / radius_x;
         y_scaling = radius_avg / radius_y;
         z_scaling = radius_avg / radius_z;
@@ -92,6 +95,11 @@ class Magnetometer106 {
         Serial.println("    mag_z_offset:" + String(z_offset) + " | mag_z_scaling:" + String(z_scaling));
     }
 
+    float averagingFilter(float measured_signal, float previous_signal) {
+        float filter_ouput = ((1 - filter_strength) * measured_signal) + (filter_strength * previous_signal);
+        return filter_ouput;
+    }
+
 public:
     bool manual_calibration = false; // decide whether to perform a manual calibration or pull previous values from EEPROM
 
@@ -119,10 +127,31 @@ public:
         sensor_packet.mag_z = (sensor.m.z - z_offset) * z_scaling;
     }
 
+    // calculate heading purely based on the compass data. this doesn't fuse the gyro or accelerometer sensors
     float calculateHeading(const SensorPacket& sensor_packet) {
-        float heading_rad = atan2f(sensor_packet.mag_y, sensor_packet.mag_x);
-        return heading_rad * RAD_TO_DEG;
+        mag_x_previous = averagingFilter(sensor_packet.mag_x, mag_x_previous);
+        mag_y_previous = averagingFilter(sensor_packet.mag_y, mag_y_previous);
+
+        float heading_deg = atan2f(mag_y_previous, mag_x_previous) * RAD_TO_DEG;
+        return heading_deg;
     }
 };
+
+Magnetometer106 compass_main; // creates an instance of the compass
+
+// rtos task to update AHRS, executed at 0.5 kHz to prevent sensor packets from being used more than once
+void updateAHRS(void *param) {
+    TickType_t last_wake = xTaskGetTickCount();
+    const TickType_t period = pdMS_TO_TICKS(4);
+
+    while(1) {
+        compass_main.read(sensor_packet_main); // this avoids having to make excessive copies of each sensor packet
+        ahrs_packet_main.yaw = compass_main.calculateHeading(sensor_packet_main);
+
+        ahrs_packet_main.timestamp = static_cast<long>(micros());
+        
+        xTaskDelayUntil(&last_wake, period); // again, xTaskDelayUntil() gives better accuracy than a simple vTaskDelay()
+    }
+}
 
 #endif

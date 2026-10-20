@@ -8,15 +8,12 @@
 #include "packets_vars_functions.hpp"
 
 Servo steering_servo;
-const int SERVO_PIN = D9;
+const int SERVO_PIN = 2;
 
 const float K_P = 0.50, K_I = 0.0, K_D = 0.0;
 PID steering_correction(&pid_input, &pid_output, &target_heading, K_P, K_I, K_D, REVERSE);  // pid mode can be DIRECT or REVERSE depending on how the servo and magnetometer are mounted
 
 void steerRobot(void *param) {
-    float initial_heading = 180.0;
-    float final_heading = 270.0;
-
     while(1) {
         pid_input = ahrs_packet_main.yaw;
 

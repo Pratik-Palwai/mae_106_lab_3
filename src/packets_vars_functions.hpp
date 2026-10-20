@@ -7,7 +7,7 @@ struct SensorPacket { float mag_x = 0.0, mag_y = 0.0, mag_z = 0.0; };
 
 struct AHRSPacket { long timestamp = 0; float yaw = 0.0; };
 
-double pid_input = 0.0, target_heading = 0.0, pid_output = 0.0; // pid input and output variables, used in actuation.hpp
+double pid_input = 0.0, target_heading = 0.0, pid_output = 0.0; // pid input and output variables, used in servo.hpp
 
 AHRSPacket ahrs_packet_main; // because we are passing packets by reference we only ever need one instance of the packet
 SensorPacket sensor_packet_main; // instead of creating copies the functions just modify the packets in place
