@@ -22,7 +22,7 @@ void serialOutput(void *param) {
         Serial.print(",yaw:" + String(ahrs_packet_main.yaw));
         Serial.print("\r\n");
 
-        vTaskDelay(pdMS_TO_TICKS(50));
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 

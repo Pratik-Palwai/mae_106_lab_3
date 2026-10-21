@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <LIS3MDL.h>
+#include <filters.h>
 
 #include "packets_vars_functions.hpp"
 
@@ -16,6 +17,10 @@
 
 const int MAG_CAL_SAMPLES = 10000;
 
+const float CUTOFF_FREQ = 20.0; // Hz
+const float SAMPLING_TIME = 0.005; // sec
+IIR::ORDER order = IIR::ORDER::OD3;
+
 class Magnetometer106 {
     LIS3MDL sensor; // core sensor, the STM LIS3MDL
 
@@ -23,8 +28,8 @@ class Magnetometer106 {
     float y_offset = 0.0, y_scaling = 1.0; // scaling factors are for soft-iron calibration
     float z_offset = 0.0, z_scaling = 1.0;
 
-    float filter_strength = 0.75; // a higher filter strength leads to more smoothing in the compass data
-    float mag_x_previous = 0.0, mag_y_previous = 0.0;
+    Filter x_filter{CUTOFF_FREQ, SAMPLING_TIME, order};
+    Filter y_filter{CUTOFF_FREQ, SAMPLING_TIME, order};
 
     void calibrateToEEPROM() {
         float x_min = 2147483646, x_max = -2147483646; // 32-bit integer limits
@@ -95,11 +100,6 @@ class Magnetometer106 {
         Serial.println("    mag_z_offset:" + String(z_offset) + " | mag_z_scaling:" + String(z_scaling));
     }
 
-    float averagingFilter(float measured_signal, float previous_signal) {
-        float filter_ouput = ((1 - filter_strength) * measured_signal) + (filter_strength * previous_signal);
-        return filter_ouput;
-    }
-
 public:
     bool manual_calibration = false; // decide whether to perform a manual calibration or pull previous values from EEPROM
 
@@ -129,10 +129,10 @@ public:
 
     // calculate heading purely based on the compass data. this doesn't fuse the gyro or accelerometer sensors
     float calculateHeading(const SensorPacket& sensor_packet) {
-        mag_x_previous = averagingFilter(sensor_packet.mag_x, mag_x_previous);
-        mag_y_previous = averagingFilter(sensor_packet.mag_y, mag_y_previous);
+        float mag_x_filtered = x_filter.filterIn(sensor_packet.mag_x);
+        float mag_y_filtered = y_filter.filterIn(sensor_packet.mag_y);
 
-        float heading_deg = atan2f(mag_y_previous, mag_x_previous) * RAD_TO_DEG;
+        float heading_deg = atan2f(mag_y_filtered, mag_x_filtered) * RAD_TO_DEG;
         return heading_deg;
     }
 };
