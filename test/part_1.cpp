@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-#include "ahrs.hpp"
 #include <magnetometer.hpp>
 #include <packets_vars_functions.hpp>
 
