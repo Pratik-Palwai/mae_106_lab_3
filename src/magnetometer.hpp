@@ -17,7 +17,7 @@
 
 const int MAG_CAL_SAMPLES = 10000;
 
-const float CUTOFF_FREQ = 20.0; // Hz
+const float CUTOFF_FREQ = 5.0; // Hz
 const float SAMPLING_TIME = 0.005; // sec
 IIR::ORDER order = IIR::ORDER::OD3;
 
