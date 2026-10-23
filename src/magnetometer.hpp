@@ -128,9 +128,11 @@ public:
     }
 
     // calculate heading purely based on the compass data. this doesn't fuse the gyro or accelerometer sensors
-    float calculateHeading(const SensorPacket& sensor_packet) {
-        float mag_x_filtered = x_filter.filterIn(sensor_packet.mag_x);
-        float mag_y_filtered = y_filter.filterIn(sensor_packet.mag_y);
+    float calculateHeading() {
+        sensor.read();
+
+        float mag_x_filtered = x_filter.filterIn(sensor.m.y);
+        float mag_y_filtered = y_filter.filterIn(sensor.m.x);
 
         float heading_deg = atan2f(mag_y_filtered, mag_x_filtered) * RAD_TO_DEG;
         return heading_deg;
@@ -146,9 +148,7 @@ void updateAHRS(void *param) {
 
     while(1) {
         compass_main.read(sensor_packet_main); // this avoids having to make excessive copies of each sensor packet
-        ahrs_packet_main.yaw = compass_main.calculateHeading(sensor_packet_main);
-
-        ahrs_packet_main.timestamp = static_cast<long>(micros());
+        yaw = compass_main.calculateHeading();
         
         xTaskDelayUntil(&last_wake, period); // again, xTaskDelayUntil() gives better accuracy than a simple vTaskDelay()
     }

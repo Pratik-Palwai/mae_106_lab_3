@@ -15,7 +15,7 @@ PID steering_correction(&pid_input, &pid_output, &target_heading, K_P, K_I, K_D,
 
 void steerRobot(void *param) {
     while(1) {
-        pid_input = ahrs_packet_main.yaw;
+        pid_input = yaw;
 
         steering_correction.Compute();
         steering_servo.write(90.0 + pid_output); // convert the +/- heading from the PID to a 0-180 command for the servo
